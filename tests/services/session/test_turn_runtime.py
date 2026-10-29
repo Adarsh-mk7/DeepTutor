@@ -98,6 +98,30 @@ class TestAssemblePersistedAnswer:
         content = "`中文*，重点*`\n$中文*，重点*$\n中文***，重点***内容"
         assert _repair_chinese_emphasis_for_persistence(content, "zh") == content
 
+    def test_preserves_inline_code_containing_dollar_signs(self) -> None:
+        content = "PHP 对象：`$b = $a`；PHP 数组：`$b = $a`。"
+        assert _repair_chinese_emphasis_for_persistence(content, "zh") == content
+
+    def test_preserves_code_math_mixture_and_fenced_blocks_with_dollars(self) -> None:
+        content = (
+            "```php\n$x = 10;\n$y = $x;\n```\n"
+            "代码 `$var = $other` 与数学公式 $a + b = c$ 以及中文*，重点*内容。\n"
+            "价格是 $50 和 $100，中文*，重点*。"
+        )
+        expected = (
+            "```php\n$x = 10;\n$y = $x;\n```\n"
+            "代码 `$var = $other` 与数学公式 $a + b = c$ 以及中文 *，重点* 内容。\n"
+            "价格是 $50 和 $100，中文 *，重点*。"
+        )
+        assert _repair_chinese_emphasis_for_persistence(content, "zh") == expected
+
+    def test_preserves_literal_protected_placeholders(self) -> None:
+        content = "字面占位符 \x00CJK_PROTECTED_0\x00 与中文*，重点*内容"
+        assert (
+            _repair_chinese_emphasis_for_persistence(content, "zh")
+            == "字面占位符 \x00CJK_PROTECTED_0\x00 与中文 *，重点* 内容"
+        )
+
     def test_continuation_preserves_exact_visible_boundary(self) -> None:
         segments = [
             ("round-part-1", "Part one. "),
